@@ -1,0 +1,242 @@
+<!--Per Andersen 2021-2023-->
+
+<html>
+<head><title>Vennekysten development version alfa</title></head>
+<style>
+html, body {
+  width:  100%;
+  height: 100%;
+  margin: 0px;
+  padding:0px;
+}
+#game>div {
+    padding:0px;
+    margin:0px;
+    cursor: grab;
+    overflow: auto;
+    
+}
+#gui {
+    height:60px;
+    margin: 0px;
+    padding:0px;
+    position:fixed;
+}
+.side-menu {
+    z-index: 2;
+    height:100%;
+    position: fixed;
+    right: 0%;
+    top: 10%;
+    margin: 0 auto;
+    background-color: white;
+    visibility: hidden;
+}
+
+</style>
+<body onload="load()">
+<div id="gui">
+    <a onclick="dig()"><img src="graphics/gui/shovel.png"/></a>
+    <a onclick="housesVisible()"><img src="graphics/gui/houses.png"></a>
+    <a onclick="roadsVisible()"><img src="graphics/gui/roads.png"></a>
+    </div>
+    
+</div>
+<div id="houses" class="side-menu">
+<a onclick="buildhouse('bolig.png')"><img src="graphics/surface/bolig.png"/></a><br/>
+<a onclick="buildhouse('bolig2.png')"><img src="graphics/surface/bolig2.png"/></a><br/>
+<a onclick="buildhouse('bolig3.png')"><img src="graphics/surface/bolig3.png"/></a><br/>
+<a onclick="buildhouse('hytte.png')"><img src="graphics/surface/hytte.png"/></a><br/>
+<a onclick="buildhouse('hytte2.png')"><img src="graphics/surface/hytte2.png"/></a><br/></div>
+<canvas id="game"\></canvas>
+</body>
+<script>
+var tileIncrement = 75;
+var map = new Array(21);
+for (var i = 0; i<map.length; i++){
+    map[i] = new Array(21); 
+}
+function load() {
+    testScriptTag();
+    appender();
+}
+
+function testScriptTag() {
+        console.log("script loaded");
+    }
+        function appender() {
+
+
+            var gamecanvas = document.getElementById("game");
+            var context2 = gamecanvas.getContext("2d");
+            gamecanvas.width  = 3000;
+            gamecanvas.height = 1500;
+            
+            forest = new Image();
+            forest.src = "graphics/surface/forest.png";
+            forest.onload = function() {
+                for(i=0;i<=16;i++) {
+                    for(j=0;j<=16;j++) {
+                        context2.drawImage(forest,i*((tileIncrement*2)),j*((tileIncrement*2)));
+                        map[i][j] = "forest";
+                    }
+                }
+            }
+            console.log("generated forest");
+            beach = new Image();
+            beach.src = "graphics/surface/beach.png";
+            beach.onload = function() {
+                for(i=17;i<=17;i++) {
+                    for(j=0;j<=17;j++) {
+                        context2.drawImage(beach,i*((tileIncrement*2)),j*((tileIncrement*2)));
+                        map[i][j] = "beach";
+                    }
+                }
+            }
+            console.log("generated beach");
+            sea = new Image();
+            sea.src = "graphics/surface/sea.png";
+            sea.onload = function() {
+                for(i=18;i<=20;i++) {
+                    for(j=0;j<=20;j++) {
+                        context2.drawImage(sea,i*((tileIncrement*2)),j*((tileIncrement*2)));
+                        map[i][j] = "sea";
+                    }
+                }
+            }
+            var firstSea = true;
+            setInterval(function() {
+                if(firstSea) {
+            sea = new Image();
+            sea.src = "graphics/surface/sea.png";
+            sea.onload = function() {
+                for(i=18;i<=20;i++) {
+                    for(j=0;j<=20;j++) {
+                        context2.drawImage(sea,i*((tileIncrement*2)),j*((tileIncrement*2)));
+                        map[i][j] = "sea";
+                    }
+                }
+            }
+            firstSea=false;
+                }
+                else {
+            sea2 = new Image();
+            sea2.src = "graphics/surface/sea2.png";
+            sea2.onload = function() {
+                for(i=18;i<=20;i++) {
+                    for(j=0;j<=20;j++) {
+                        context2.drawImage(sea2,i*((tileIncrement*2)),j*((tileIncrement*2)));
+                    }
+                }
+            }
+            firstSea=true;
+            }
+            }, 500);
+            console.log("generated sea");
+            console.log("map created");
+            console.log(map);
+        }
+function dig() {
+    toolSelected();
+    var canvas = document.getElementById("game");
+    document.getElementById("game").onclick=function(event) {
+        //get the square clicked.
+        var positionX = event.clientX -event.currentTarget.offsetLeft;
+        var positionY = event.clientY - event.currentTarget.offsetTop;
+        
+    /// getBoundingClientRect is supported in most browsers and gives you
+    /// the absolute geometry of an element
+    var rect = canvas.getBoundingClientRect();
+
+    /// as mouse event coords are relative to document you need to
+    /// subtract the element's left and top position:
+    positionX = event.clientX - rect.left;
+    positionY = event.clientY - rect.top;
+        drawPNGOnPos(positionX,positionY,"graphics/surface/grass.png");    
+    };
+}
+function drawPNGOnPos(x,y,path) {
+    //find clean square to draw on
+    console.log(x);
+    console.log(y);
+    var squareInMapX = Math.floor(x/(tileIncrement*2));
+    var squareInMapY = Math.floor(y/(tileIncrement*2));
+
+    if(askMapForForest(squareInMapX,squareInMapY)) {
+        var gamecanvas = document.getElementById("game");
+        var context2 = gamecanvas.getContext("2d");
+        grass = new Image();
+        grass.src = path;
+        grass.onload = function() {
+            context2.drawImage(grass,squareInMapX*(tileIncrement*2),squareInMapY*(tileIncrement*2));
+            map[squareInMapX][squareInMapY] = "grass";
+        }
+    }
+
+}
+function toolSelected() {
+    document.getElementById("game").onclick= null;
+    document.getElementById("houses").style.visibility = "hidden";
+}
+/// the main function
+function getMousePos(canvas, e) {
+
+    /// getBoundingClientRect is supported in most browsers and gives you
+    /// the absolute geometry of an element
+    var rect = canvas.getBoundingClientRect();
+
+    /// as mouse event coords are relative to document you need to
+    /// subtract the element's left and top position:
+    return {x: e.clientX - rect.left, y: e.clientY - rect.top};
+}
+function askMapForForest(x,y) {
+    array = map[y];
+    if(array[x] == "forest") {
+        return true;
+    }
+    else return false;
+}
+function askMapForGrass(x,y) {
+    array = map[y];
+    if(array[x] == "grass") {
+        return true;
+    }
+    else return false;
+}
+function housesVisible() {
+    document.getElementById("houses").style.visibility = "visible";
+}
+function buildhouse(png) {
+    var canvas = document.getElementById("game");
+    document.getElementById("game").onclick=function(event) {
+    //get the square clicked.
+    var positionX = event.clientX -event.currentTarget.offsetLeft;
+    var positionY = event.clientY - event.currentTarget.offsetTop;
+        
+
+
+    /// getBoundingClientRect is supported in most browsers and gives you
+    /// the absolute geometry of an element
+    var rect = canvas.getBoundingClientRect();
+
+    /// as mouse event coords are relative to document you need to
+    /// subtract the element's left and top position:
+    positionX = event.clientX - rect.left;
+    positionY = event.clientY - rect.top;
+    console.log(Math.floor(positionX/(tileIncrement*2)));
+    //using askMapForGrass to see if there is grass removed
+    if(askMapForGrass(Math.floor(positionX/(tileIncrement*2)),Math.floor(positionY/(tileIncrement*2))) && (png==("bolig.png" || "bolig2.png" || "bolig3.png"))) {
+        drawPNGOnPos(positionX,positionY,"graphics/surface/" + png);
+    }
+    if(png==("hytte.png")||("hytte2.png")) {
+        drawPNGOnPos(positionX,positionY,"graphics/surface/" + png);
+    }
+    console.log(png);
+            
+    };
+}
+function roadsVisible() {
+
+}
+            </script>
+</html>
